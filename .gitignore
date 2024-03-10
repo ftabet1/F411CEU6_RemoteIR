@@ -4,3 +4,5 @@ STM32F411CEUX_RAM.ld
 .mxproject
 .settings/
 .cproject
+Debug/
+F411CEU6_RemoteIR Debug.launch
