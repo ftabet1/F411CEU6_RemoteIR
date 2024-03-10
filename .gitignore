@@ -1,0 +1,7 @@
+F411CEU6_RemoteIR.ioc
+STM32F411CEUX_FLASH.ld
+STM32F411CEUX_RAM.ld
+.project
+.mxproject
+.settings/
+.cproject
