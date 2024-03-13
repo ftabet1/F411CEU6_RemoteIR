@@ -55,9 +55,13 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim10;
 /* USER CODE BEGIN EV */
-
+extern uint16_t cycleCnt;
+extern uint32_t sigArr[999];
+extern uint8_t sigTimeoutFlag;
+extern TIM_HandleTypeDef htim5;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -210,6 +214,46 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
+}
+
+/**
+  * @brief This function handles EXTI line[15:10] interrupts.
+  */
+void EXTI15_10_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+	if(cycleCnt == 0)
+	{
+		htim5.Instance->CR1 |= TIM_CR1_CEN_Msk;
+		cycleCnt++;
+	}
+	else
+	{
+		//htim5.Instance->CR1 &= ~(1);
+		sigArr[(cycleCnt++ - 1)] = htim5.Instance->CNT;
+		htim5.Instance->CNT = 0;
+	}
+  /* USER CODE END EXTI15_10_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+  /* USER CODE BEGIN EXTI15_10_IRQn 1 */
+
+  /* USER CODE END EXTI15_10_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM5 global interrupt.
+  */
+void TIM5_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM5_IRQn 0 */
+	sigTimeoutFlag = 1;
+	htim5.Instance->CR1 &= ~(TIM_CR1_CEN_Msk);
+	htim5.Instance->SR = 0;
+  /* USER CODE END TIM5_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim5);
+  /* USER CODE BEGIN TIM5_IRQn 1 */
+
+  /* USER CODE END TIM5_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
