@@ -52,6 +52,9 @@ TIM_HandleTypeDef htim11;
 uint16_t cycleCnt = 0;
 uint32_t sigArr[999] = {0};
 uint8_t sigTimeoutFlag = 0;
+uint8_t startFlag = 0;
+uint8_t sendModeFlag = 0;
+uint16_t sendCnt = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -107,6 +110,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Base_Start_IT(&htim10);
   HAL_TIM_Base_Start_IT(&htim11);
+  htim11.Instance->CR1 &= ~(1);
   htim11.Instance->CCR1 = 1316;
   htim11.Instance->CCER = 0x0001;
   htim5.Instance->CR1 &= ~(1);
@@ -119,12 +123,28 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
     /* USER CODE BEGIN 3 */
 	  if(sigTimeoutFlag == 1)
 	  {
-		  sigTimeoutFlag = 0;
-	  }
+		  if(startFlag == 1)
+		  {
+			  int a;
+			  EXTI->IMR &= ~(1 << 13);
+ 			  HAL_Delay(100);
+			  sendModeFlag = 1;
+			  sigTimeoutFlag = 0;
+			  htim5.Instance->ARR = 1000;
+			  htim5.Instance->CNT = 0;
+			  htim5.Instance->CR1 |= 1;
+		  }
+		  else
+		  {
+			  startFlag = 1;
+			  sigTimeoutFlag = 0;
+		  }
+
+	   }
+
   }
   /* USER CODE END 3 */
 }

@@ -57,11 +57,15 @@
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim10;
+extern TIM_HandleTypeDef htim11;
 /* USER CODE BEGIN EV */
 extern uint16_t cycleCnt;
 extern uint32_t sigArr[999];
 extern uint8_t sigTimeoutFlag;
 extern TIM_HandleTypeDef htim5;
+extern uint8_t sendModeFlag;
+extern uint8_t startFlag;
+extern uint16_t sendCnt;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -246,11 +250,31 @@ void EXTI15_10_IRQHandler(void)
 void TIM5_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM5_IRQn 0 */
-	sigTimeoutFlag = 1;
-	htim5.Instance->CR1 &= ~(TIM_CR1_CEN_Msk);
+		if(sendModeFlag == 0)
+		{
+			sigTimeoutFlag = 1;
+			htim5.Instance->CR1 &= ~(TIM_CR1_CEN_Msk);
+		}
+		else
+		{
+			if(sigArr[sendCnt] != 0)
+			{
+				htim5.Instance->ARR = sigArr[sendCnt++];
+				htim5.Instance->CNT = 0;
+				htim11.Instance->CR1 ^= 1;
+			}
+			else
+			{
+				sendCnt = 0;
+				sendModeFlag = 0;
+				sigTimeoutFlag = 1;
+				htim5.Instance->CR1 &= ~(1);
+				htim11.Instance->CR1 &= ~(1);
+			}
+		}
 	htim5.Instance->SR = 0;
   /* USER CODE END TIM5_IRQn 0 */
-  HAL_TIM_IRQHandler(&htim5);
+ // HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
 
   /* USER CODE END TIM5_IRQn 1 */
