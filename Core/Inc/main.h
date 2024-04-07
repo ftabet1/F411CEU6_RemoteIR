@@ -61,6 +61,13 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define OnBoard_led_Pin GPIO_PIN_13
 #define OnBoard_led_GPIO_Port GPIOC
+#define SIG_INPUT_PIN_Pin GPIO_PIN_14
+#define SIG_INPUT_PIN_GPIO_Port GPIOB
+#define SIG_INPUT_PIN_EXTI_IRQn EXTI15_10_IRQn
+#define Btn2_Pin_Pin GPIO_PIN_3
+#define Btn2_Pin_GPIO_Port GPIOB
+#define Btn1_Pin_Pin GPIO_PIN_4
+#define Btn1_Pin_GPIO_Port GPIOB
 #define PWM_38KHz_Pin GPIO_PIN_9
 #define PWM_38KHz_GPIO_Port GPIOB
 

@@ -57,9 +57,9 @@
 /* External variables --------------------------------------------------------*/
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim10;
-extern TIM_HandleTypeDef htim11;
 /* USER CODE BEGIN EV */
 extern uint16_t cycleCnt;
+extern TIM_HandleTypeDef htim11;
 extern uint32_t sigArr[999];
 extern uint8_t sigTimeoutFlag;
 extern TIM_HandleTypeDef htim5;
@@ -239,6 +239,7 @@ void EXTI15_10_IRQHandler(void)
 	}
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+  HAL_GPIO_EXTI_IRQHandler(SIG_INPUT_PIN_Pin);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
 
   /* USER CODE END EXTI15_10_IRQn 1 */
@@ -274,7 +275,7 @@ void TIM5_IRQHandler(void)
 		}
 	htim5.Instance->SR = 0;
   /* USER CODE END TIM5_IRQn 0 */
- // HAL_TIM_IRQHandler(&htim5);
+  HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
 
   /* USER CODE END TIM5_IRQn 1 */
