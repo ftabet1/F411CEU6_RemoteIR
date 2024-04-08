@@ -50,11 +50,15 @@ TIM_HandleTypeDef htim11;
 
 /* USER CODE BEGIN PV */
 uint16_t cycleCnt = 0;
-uint32_t sigArr[999] = {0};
+uint32_t sigArr[1024] = {0};
+uint8_t sector[4096] = {0};
+uint32_t data[3] = {20405, 12345, 54321};
+uint32_t dataRead[10] = {0};
 uint8_t sigTimeoutFlag = 0;
 uint8_t startFlag = 0;
 uint8_t sendModeFlag = 0;
 uint16_t sendCnt = 0;
+SPIF_HandleTypeDef spif;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,6 +112,10 @@ int main(void)
   MX_TIM11_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
+  SPIF_Init(&spif, &hspi1, SPI1_NSS_GPIO_Port, SPI1_NSS_Pin);
+  SPIF_EraseSector(&spif, SPIF_SectorToAddress(1));
+  SPIF_WriteAddress(&spif, SPIF_SectorToAddress(1), (uint8_t*)data, (3*4));
+  SPIF_ReadAddress(&spif, SPIF_SectorToAddress(1), (uint8_t*)dataRead, (10*4));
   HAL_TIM_Base_Start_IT(&htim10);
   HAL_TIM_Base_Start_IT(&htim11);
   htim11.Instance->CR1 &= ~(1);
@@ -252,7 +260,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -409,12 +417,22 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(OnBoard_led_GPIO_Port, OnBoard_led_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : OnBoard_led_Pin */
   GPIO_InitStruct.Pin = OnBoard_led_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(OnBoard_led_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : SPI1_NSS_Pin */
+  GPIO_InitStruct.Pin = SPI1_NSS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(SPI1_NSS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB13 SIG_INPUT_PIN_Pin */
   GPIO_InitStruct.Pin = GPIO_PIN_13|SIG_INPUT_PIN_Pin;

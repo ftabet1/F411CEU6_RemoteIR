@@ -31,7 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "spif.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -61,6 +61,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define OnBoard_led_Pin GPIO_PIN_13
 #define OnBoard_led_GPIO_Port GPIOC
+#define SPI1_NSS_Pin GPIO_PIN_4
+#define SPI1_NSS_GPIO_Port GPIOA
 #define SIG_INPUT_PIN_Pin GPIO_PIN_14
 #define SIG_INPUT_PIN_GPIO_Port GPIOB
 #define SIG_INPUT_PIN_EXTI_IRQn EXTI15_10_IRQn

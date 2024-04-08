@@ -6,3 +6,4 @@ STM32F411CEUX_RAM.ld
 .cproject
 Debug/
 F411CEU6_RemoteIR Debug.launch
+P25_Flash/
