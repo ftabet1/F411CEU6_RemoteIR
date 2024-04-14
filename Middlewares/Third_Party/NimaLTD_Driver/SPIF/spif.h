@@ -51,7 +51,7 @@ extern "C"
 #include <stdbool.h>
 #include <string.h>
 #include "NimaLTD.I-CUBE-SPIF_conf.h"
-#include "stm32f4xx_hal.h"
+#include "spi.h"
 
 /************************************************************************************************************
 **************    Public Definitions
