@@ -25,6 +25,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -66,7 +67,26 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void CheckButtons()
+{
+	if((GPIOB->IDR & (1<<3)) == 0)
+	{
+		HAL_Delay(100);
+		sendModeFlag = 0;
+		sigTimeoutFlag = 0;
+		EXTI->IMR |= ((1 << 13) | (1 << 14 ));
+	}
+	else if((GPIOB->IDR & (1<<4)) == 0)
+	{
+		HAL_Delay(100);
+		EXTI->IMR &= ~((1 << 13) | (1 << 14 ));
+		sendModeFlag = 1;
+		sigTimeoutFlag = 0;
+		htim5.Instance->ARR = 1000;
+		htim5.Instance->CNT = 0;
+		htim5.Instance->CR1 |= 1;
+	}
+}
 /* USER CODE END 0 */
 
 /**
@@ -105,7 +125,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   SPIF_Init(&spif, &hspi1, SPI1_NSS_GPIO_Port, SPI1_NSS_Pin);
   ssd1306_Init();
-  ssd1306_Fill(1);
+  ssd1306_Fill(White);
+  ssd1306_DrawPixel(10, 10, Black);
   ssd1306_UpdateScreen();
   IR_REMOTE_FlushData(&hir);
   //SPIF_EraseSector(&spif, SPIF_SectorToAddress(2));
@@ -129,27 +150,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-	  if(sigTimeoutFlag == 1)
-	  {
-		  if(startFlag == 1)
-		  {
-			  int a;
-			  EXTI->IMR &= ~((1 << 13) | (1 << 14 ));
- 			  HAL_Delay(100);
-			  sendModeFlag = 1;
-			  sigTimeoutFlag = 0;
-			  htim5.Instance->ARR = 1000;
-			  htim5.Instance->CNT = 0;
-			  htim5.Instance->CR1 |= 1;
-		  }
-		  else
-		  {
-			  startFlag = 1;
-			  sigTimeoutFlag = 0;
-		  }
-
-	   }
+	  CheckButtons();
 
   }
   /* USER CODE END 3 */

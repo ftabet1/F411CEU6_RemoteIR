@@ -34,6 +34,7 @@ extern "C" {
 #include "spif.h"
 #include "ir_remote.h"
 #include "ssd1306.h"
+#include "ssd1306_tests.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/

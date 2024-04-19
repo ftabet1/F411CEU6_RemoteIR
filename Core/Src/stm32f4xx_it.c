@@ -255,6 +255,8 @@ void TIM5_IRQHandler(void)
 		{
 			sigTimeoutFlag = 1;
 			htim5.Instance->CR1 &= ~(TIM_CR1_CEN_Msk);
+			htim5.Instance->CNT = 0;
+			cycleCnt = 0;
 		}
 		else
 		{
@@ -271,6 +273,7 @@ void TIM5_IRQHandler(void)
 				sigTimeoutFlag = 1;
 				htim5.Instance->CR1 &= ~(1);
 				htim11.Instance->CR1 &= ~(1);
+				htim11.Instance->CNT = 0;
 			}
 		}
 	htim5.Instance->SR = 0;
