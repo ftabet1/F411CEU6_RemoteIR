@@ -46,17 +46,19 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint32_t timeoutCnt = 0;
 uint16_t cycleCnt = 0;
 uint32_t sigArr[200] = {0};
+uint32_t sendSigArr[200] = {0};
 uint8_t sector[4096] = {0};
 uint32_t data[3] = {20405, 12345, 54321};
 uint32_t dataRead[1024] = {0};
-uint8_t sigTimeoutFlag = 0;
-uint8_t startFlag = 0;
-uint8_t sendModeFlag = 0;
 uint16_t sendCnt = 0;
+
 SPIF_HandleTypeDef spif;
 IR_REMOTE_HandleTypeDef hir, hir2;
+IR_REMOTE_MGMT_HandleTypeDef mgmt;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,21 +73,95 @@ void CheckButtons()
 {
 	if((GPIOB->IDR & (1<<3)) == 0)
 	{
-		HAL_Delay(100);
-		sendModeFlag = 0;
-		sigTimeoutFlag = 0;
-		EXTI->IMR |= ((1 << 13) | (1 << 14 ));
+		HAL_Delay(200);
+		if((GPIOB->IDR & (1<<3)) == 0)
+		{
+			HAL_Delay(50);
+			if (IR_REMOTE_MGMT_StartListening_IT(&mgmt) == IR_REMOTE_BAD_STATUS) return;
+			ssd1306_SetCursor(30, 40);
+			ssd1306_WriteChar('L', Font_16x24, White);
+			ssd1306_UpdateScreen();
+			while(mgmt.mode)
+			{
+				if(timeoutCnt++ >= 20000000) break;
+			}
+			if(timeoutCnt > 19999999)
+			{
+				ssd1306_SetCursor(0, 0);
+				ssd1306_WriteChar('X', Font_16x24, White);
+				ssd1306_UpdateScreen();
+				HAL_Delay(1000);
+				ssd1306_SetCursor(0, 0);
+				ssd1306_WriteChar(' ', Font_16x24, White);
+				ssd1306_UpdateScreen();
+				mgmt.mode = IR_REMOTE_MODE_IDLE;
+				ssd1306_SetCursor(30, 40);
+				ssd1306_WriteChar('I', Font_16x24, White);
+				ssd1306_UpdateScreen();
+				timeoutCnt = 0;
+				return;
+			}
+			else
+			{
+				IR_REMOTE_PutSignal(&hir, sigArr, mgmt.currentSignalNum);
+				for(int i = 0; i < 200; i++) sigArr[i] = 0;
+				IR_REMOTE_PackMetadata(&hir);
+				SPIF_EraseSector(&spif, 2);
+				HAL_Delay(10);
+				SPIF_WriteAddress(&spif, SPIF_SectorToAddress(2), (uint8_t*)hir.signalBlock, SPIF_SECTOR_SIZE);
+				ssd1306_SetCursor(60,40);
+				ssd1306_WriteChar('+', Font_16x24, White);
+				SPIF_ReadAddress(&spif, SPIF_SectorToAddress(2), (uint8_t*)hir2.signalBlock, SPIF_SECTOR_SIZE);
+				timeoutCnt = 0;
+			}
+
+
+			ssd1306_SetCursor(30, 40);
+			ssd1306_WriteChar('I', Font_16x24, White);
+			ssd1306_UpdateScreen();
+
+		}
+		else
+		{
+			HAL_Delay(50);
+			IR_REMOTE_GetSignal(&hir, sendSigArr, mgmt.currentSignalNum);
+			IR_REMOTE_MGMT_StartSending_IT(&mgmt);
+		}
+
 	}
 	else if((GPIOB->IDR & (1<<4)) == 0)
 	{
-		HAL_Delay(100);
-		EXTI->IMR &= ~((1 << 13) | (1 << 14 ));
-		sendModeFlag = 1;
-		sigTimeoutFlag = 0;
-		htim5.Instance->ARR = 1000;
-		htim5.Instance->CNT = 0;
-		htim5.Instance->CR1 |= 1;
+		HAL_Delay(200);
+		if((GPIOB->IDR & (1<<4)) == 0)
+				{
+					HAL_Delay(50);
+					if(IR_REMOTE_DeleteSignal(&hir, mgmt.currentSignalNum))
+					{
+					IR_REMOTE_PackMetadata(&hir);
+					SPIF_EraseSector(&spif, 2);
+					HAL_Delay(10);
+					SPIF_WriteAddress(&spif, SPIF_SectorToAddress(2), (uint8_t*)hir.signalBlock, SPIF_SECTOR_SIZE);
+					ssd1306_SetCursor(60,40);
+					ssd1306_WriteChar('-', Font_16x24, White);
+					SPIF_ReadAddress(&spif, SPIF_SectorToAddress(2), (uint8_t*)hir2.signalBlock, SPIF_SECTOR_SIZE);
+					ssd1306_UpdateScreen();
+					}
+
+				}
+				else
+				{
+					HAL_Delay(50);
+					mgmt.currentSignalNum = (mgmt.currentSignalNum + 1) % 5;
+					ssd1306_SetCursor(60,40);
+				    if(hir.signalOffset[mgmt.currentSignalNum] == 0 || hir.signalOffset[mgmt.currentSignalNum] == 0xFFFFFFFF) ssd1306_WriteChar('-', Font_16x24, White);
+					else ssd1306_WriteChar('+', Font_16x24, White);
+					ssd1306_SetCursor(0, 40);
+					ssd1306_WriteChar((char)(48+mgmt.currentSignalNum), Font_16x24, White);
+					ssd1306_UpdateScreen();
+				}
+
 	}
+
 }
 /* USER CODE END 0 */
 
@@ -112,7 +188,6 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -122,12 +197,11 @@ int main(void)
   MX_TIM10_Init();
   MX_TIM11_Init();
   MX_TIM5_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   SPIF_Init(&spif, &hspi1, SPI1_NSS_GPIO_Port, SPI1_NSS_Pin);
   ssd1306_Init();
-  ssd1306_Fill(White);
-  ssd1306_DrawPixel(10, 10, Black);
-  ssd1306_UpdateScreen();
+
   IR_REMOTE_FlushData(&hir);
   //SPIF_EraseSector(&spif, SPIF_SectorToAddress(2));
   //SPIF_WriteAddress(&spif, SPIF_SectorToAddress(2), (uint8_t*)hir.signalBlock, SPIF_SECTOR_SIZE);
@@ -135,12 +209,35 @@ int main(void)
   IR_REMOTE_UnpackMetadata(&hir);
   HAL_TIM_Base_Start_IT(&htim10);
   HAL_TIM_Base_Start_IT(&htim11);
-  htim11.Instance->CR1 &= ~(1);
-  htim11.Instance->CCR1 = 1316;
-  htim11.Instance->CCER = 0x0001;
-  htim5.Instance->CR1 &= ~(1);
-  htim5.Instance->CNT = 0;
-  htim5.Instance->DIER = 1;
+
+  mgmt.currentSignalNum = 0;
+  mgmt.mode = IR_REMOTE_MODE_IDLE;
+
+  ssd1306_SetCursor(0, 40);
+  ssd1306_WriteChar((char)(48+mgmt.currentSignalNum), Font_16x24, White);
+  ssd1306_SetCursor(30, 40);
+  ssd1306_WriteChar('I', Font_16x24, White);
+  ssd1306_SetCursor(60,40);
+  if(hir.signalOffset[mgmt.currentSignalNum] == 0 || hir.signalOffset[mgmt.currentSignalNum] == 0xFFFFFFFF) ssd1306_WriteChar('-', Font_16x24, White);
+  else ssd1306_WriteChar('+', Font_16x24, White);
+  ssd1306_UpdateScreen();
+  TIM11->CR1 &= ~(1);
+  TIM11->CCR1 = 1316;
+  TIM11->CCER = 0x0001;
+
+  TIM5->CR1 &= ~(1);
+  TIM5->SR = 0;
+  TIM5->CNT = 0;
+  TIM5->DIER = 1;
+  TIM5->ARR = 120000;
+
+  TIM2->SR = 0;
+  TIM2->CR1 &= ~(1);
+  TIM2->SR = 0;
+  TIM2->CNT = 0;
+  TIM2->DIER = 1;
+
+  EXTI->IMR = 0;
   /* USER CODE END 2 */
 
   /* Infinite loop */

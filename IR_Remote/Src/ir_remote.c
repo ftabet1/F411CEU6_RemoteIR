@@ -68,7 +68,40 @@ int IR_REMOTE_PutSignal(IR_REMOTE_HandleTypeDef* handle, uint32_t* data, uint32_
 	handle->signalOffset[signalNum] = signalNum*200+IR_REMOTE_DATA_OFFSET;
 	for(int i = 0; i < 200; i++)
 	{
-	handle->signalBlock[(handle->signalOffset[signalNum])+i] = data[i];
+	handle->signalBlock[((handle->signalOffset[signalNum])+i)] = data[i];
 	}
+	return IR_REMOTE_GOOD_STATUS;
+}
+
+int IR_REMOTE_DeleteSignal(IR_REMOTE_HandleTypeDef* handle, uint32_t signalNum)
+{
+	if(signalNum>4 || signalNum<0) return IR_REMOTE_BAD_STATUS;
+	//if(handle->signalLength[signalNum] == 0 || handle->signalLength[signalNum] == 0xffffffff || handle->signalOffset[signalNum] == 0 || handle->signalOffset[signalNum] == 0xffffffff) return IR_REMOTE_BAD_STATUS;
+	for(int i = handle->signalOffset[signalNum]; i < handle->signalOffset[signalNum] + handle->signalLength[signalNum]; i++)
+	{
+		handle->signalBlock[i] = 0;
+	}
+	handle->signalLength[signalNum] = 0;
+	handle->signalOffset[signalNum] = 0;
+	return IR_REMOTE_GOOD_STATUS;
+}
+
+int IR_REMOTE_MGMT_StartListening_IT(IR_REMOTE_MGMT_HandleTypeDef* handle)
+{
+	if(handle->mode != IR_REMOTE_MODE_IDLE) return IR_REMOTE_BAD_STATUS;
+	handle->mode = IR_REMOTE_MODE_LISTENING;
+	TIM5->SR &= ~(TIM_SR_UIF);
+	EXTI->IMR |= ((1 << 13) | (1 << 14));
+	return IR_REMOTE_GOOD_STATUS;
+}
+
+int IR_REMOTE_MGMT_StartSending_IT(IR_REMOTE_MGMT_HandleTypeDef* handle)
+{
+	if(handle->mode != IR_REMOTE_MODE_IDLE) return IR_REMOTE_BAD_STATUS;
+	handle->mode = IR_REMOTE_MODE_EMITTING;
+	TIM2->CR1 &= ~(TIM_CR1_CEN);
+	TIM2->ARR = 1000;
+	TIM2->CNT = 0;
+	TIM2->CR1 |= (TIM_CR1_CEN);
 	return IR_REMOTE_GOOD_STATUS;
 }

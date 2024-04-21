@@ -55,17 +55,20 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim5;
 extern TIM_HandleTypeDef htim10;
 /* USER CODE BEGIN EV */
 extern uint16_t cycleCnt;
 extern TIM_HandleTypeDef htim11;
-extern uint32_t sigArr[999];
+extern uint32_t sigArr[200];
+extern uint32_t sendSigArr[200];
 extern uint8_t sigTimeoutFlag;
 extern TIM_HandleTypeDef htim5;
 extern uint8_t sendModeFlag;
 extern uint8_t startFlag;
 extern uint16_t sendCnt;
+extern IR_REMOTE_MGMT_HandleTypeDef mgmt;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -221,21 +224,50 @@ void TIM1_UP_TIM10_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+	TIM2->SR &= ~(TIM_SR_UIF);
+		if(sendSigArr[sendCnt] != 0)
+			{
+				TIM11->CR1 ^= 1;
+				TIM2->ARR = sendSigArr[sendCnt++];
+				TIM2->CNT = 0;
+			}
+		else
+			{
+				TIM11->CR1 &= ~(1);
+				sendCnt = 0;
+				TIM2->CR1 &= ~(1);
+				TIM2->CNT = 0;
+				TIM11->CNT = 0xFFFFFFFF;
+				mgmt.mode = IR_REMOTE_MODE_IDLE;
+			}
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
   * @brief This function handles EXTI line[15:10] interrupts.
   */
 void EXTI15_10_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
+	uint32_t cnt = TIM5->CNT;
 	if(cycleCnt == 0)
 	{
-		htim5.Instance->CR1 |= TIM_CR1_CEN_Msk;
+		TIM5->CR1 |= TIM_CR1_CEN_Msk;
 		cycleCnt++;
 	}
 	else
 	{
-		//htim5.Instance->CR1 &= ~(1);
-		sigArr[(cycleCnt++ - 1)] = htim5.Instance->CNT;
-		htim5.Instance->CNT = 0;
+		if(cycleCnt < 200) sigArr[(cycleCnt++ - 1)] = cnt;
+		TIM5->CNT = 0;
 	}
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
@@ -251,32 +283,16 @@ void EXTI15_10_IRQHandler(void)
 void TIM5_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM5_IRQn 0 */
-		if(sendModeFlag == 0)
-		{
-			sigTimeoutFlag = 1;
-			htim5.Instance->CR1 &= ~(TIM_CR1_CEN_Msk);
-			htim5.Instance->CNT = 0;
-			cycleCnt = 0;
-		}
-		else
-		{
-			if(sigArr[sendCnt] != 0)
-			{
-				htim5.Instance->ARR = sigArr[sendCnt++];
-				htim5.Instance->CNT = 0;
-				htim11.Instance->CR1 ^= 1;
-			}
-			else
-			{
-				sendCnt = 0;
-				sendModeFlag = 0;
-				sigTimeoutFlag = 1;
-				htim5.Instance->CR1 &= ~(1);
-				htim11.Instance->CR1 &= ~(1);
-				htim11.Instance->CNT = 0;
-			}
-		}
-	htim5.Instance->SR = 0;
+
+	TIM5->SR = 0;
+	TIM5->CR1 &= ~(TIM_CR1_CEN_Msk);
+	TIM5->CNT = 0;
+	cycleCnt = 0;
+	if(mgmt.mode == IR_REMOTE_MODE_LISTENING)
+	{
+		mgmt.mode = IR_REMOTE_MODE_IDLE;
+	}
+	EXTI->IMR &= ~((1 << 13) | (1 << 14));
   /* USER CODE END TIM5_IRQn 0 */
   HAL_TIM_IRQHandler(&htim5);
   /* USER CODE BEGIN TIM5_IRQn 1 */
