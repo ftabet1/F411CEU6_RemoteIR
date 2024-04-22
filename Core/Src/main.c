@@ -73,14 +73,14 @@ void CheckButtons()
 {
 	if((GPIOB->IDR & (1<<3)) == 0)
 	{
-		HAL_Delay(200);
+		HAL_Delay(300);
 		if((GPIOB->IDR & (1<<3)) == 0)
 		{
-			HAL_Delay(50);
 			if (IR_REMOTE_MGMT_StartListening_IT(&mgmt) == IR_REMOTE_BAD_STATUS) return;
 			ssd1306_SetCursor(30, 40);
 			ssd1306_WriteChar('L', Font_16x24, White);
 			ssd1306_UpdateScreen();
+			HAL_Delay(100);
 			while(mgmt.mode)
 			{
 				if(timeoutCnt++ >= 20000000) break;
@@ -131,7 +131,7 @@ void CheckButtons()
 	}
 	else if((GPIOB->IDR & (1<<4)) == 0)
 	{
-		HAL_Delay(200);
+		HAL_Delay(300);
 		if((GPIOB->IDR & (1<<4)) == 0)
 				{
 					HAL_Delay(50);

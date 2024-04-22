@@ -244,6 +244,7 @@ void TIM2_IRQHandler(void)
 				TIM2->CNT = 0;
 				TIM11->CNT = 0xFFFFFFFF;
 				mgmt.mode = IR_REMOTE_MODE_IDLE;
+				for(int i = 0; i < 200; i++) sendSigArr[i] = 0;
 			}
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
